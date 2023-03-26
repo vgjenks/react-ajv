@@ -2,97 +2,69 @@ import Ajv from "ajv";
 import AjvFormats from "ajv-formats";
 import AjvErrors from "ajv-errors";
 
-import interceptor from "./data_interceptor";
+//schemas
+import { contactForm } from "../schema/contact";
 
-const ajv = new Ajv({ 
-    allErrors: true, 
+//configure AJV
+const ajv = new Ajv({
+    allErrors: true,
     strict: false,
-    $data: true 
+    $data: true
 });
 AjvFormats(ajv);
 AjvErrors(ajv);
 
+/**
+ * Call this when app loads
+ */
 const initValidationCache = async () => {
     try {
-        let { entityType, schema } = window;
-        if (!schema) {
-            throw new Error("Validation cache failed: schemas required");
-        }
-        Object.keys(entityType).forEach(et => {
-            let type = `${et[0].toLowerCase()}${et.substring(1, et.length)}`;
-            ajv.removeSchema(schema[type]);
-            ajv.addSchema(schema[type], entityType[et].type);
-        });
+        ajv.removeSchema("contactForm");
+        ajv.addSchema(contactForm, "contactForm");
+        return true
     } catch (e) {
-        console.error("Error while loading validation schemas!");
+        throw new Error(e);
     }
 };
 
-const validate = async (type, data) => {
-    let isValid = true;
-    let message = null;
-    try {
-        let validate = ajv.getSchema(type);
-        isValid = validate(data);
-        if (!isValid) {
-            message = validate.errors;
-        }
-    } catch (e) {
-        isValid = false;
-        message = e.message;
-    }
-    return {
-        isValid,
-        message
-    };
-};
-
-const coerceValues = (schema, data) => {
-    if (!schema || !data) {
-        console.error("Schema, data, or both are missing");
-        return;
-    }
-    Object.entries(schema.properties).forEach(([key, p]) => {
-        let isCoercible = p.coercible && 
-        Object.keys(p.coercible).length !== 0 &&
-        p.nullable;        
-        if (isCoercible) {
-            let { coercible } = p;
-            if (data[key] === coercible.from) {
-                data[key] = coercible.to;
-            }
-        }
-    });
-};
-
+/**
+ * Custom validation resolver - passed to react-hook-form
+ */
 const validateResolver = async (data, context) => {
+    //pull by context prop in useForm()
     let validate = ajv.getSchema(context);
-    let { schema } = validate;
-    let dataCopy = interceptor(context, { ...data });
-    coerceValues(schema, dataCopy);
-    let isValid = validate(dataCopy);
-    if (isValid) {
-        return { 
-            values: dataCopy, 
-            errors: {} 
+
+    // let { schema } = validate;
+
+    //run validation and pull errors
+    let isValid = await validate(data);
+    let { errors } = validate;
+
+    //hack/workaround for bogus, always-present "required" error
+    let errCount = errors.filter(err => err.instancePath !== "").length;
+
+    //let data through?
+    if (isValid || errCount === 0) {
+        return {
+            values: data,
+            errors: {}
         };
     }
-    let { errors } = validate;
-    //TODO: Implement a better log from front-end - sometimes errors are
-    //present here that aren't seen on-screen!
-    // console.error("VALIDATION ERROR! validator.validateResolver - find me!", errors);
-    let errorsFormatted = errors.reduce((prev, current, i) => ({
+
+    //reduce errors to format form expects
+    let errorsFormatted = errors.reduce((prev, current) => ({
         ...prev,
-        [current.dataPath.replace(".", "").replace("/", "") || `errorKey${i}`]: current.message
+        [current.instancePath.replace("/", "")]: current.message
     }), {});
+
+    //return expected format
     return {
         values: {},
         errors: errorsFormatted
     };
 };
 
-export default {
+export {
     initValidationCache,
-    validate,
     validateResolver
 };

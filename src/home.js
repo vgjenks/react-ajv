@@ -1,11 +1,22 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Form from "./form";
+import { initValidationCache } from "./lib/validator";
 import "./scss/home.scss";
 
 const Home = () => {
-    return (
-        <div>
-            <div>
+    const [isPreloaded, setIsPreloaded] = useState(false);
+
+    useEffect(() => {
+        initValidationCache().then(() => {
+            setIsPreloaded(true);
+        }).catch(e => {
+            console.log(`AJV preload failed! ${e.message}`);
+        });
+    }, []);
+
+    return isPreloaded && (
+        <div className="home-layout">
+            <header>
                 <h1>
                     Using AJV with react-hook-form
                 </h1>
@@ -15,15 +26,15 @@ const Home = () => {
                     used to quickly and efficiently validate any
                     type of data.
                 </div>
-            </div>
-            <div>
+            </header>
+            <main>
                 <Form />
-            </div>
-            <div>
-                <a href="https://vincentjenks.com">
+            </main>
+            <footer>
+                <a href="https://vincentjenks.com" target="_blank" rel="noreferrer">
                     2023 Vincent Jenks
                 </a>
-            </div>
+            </footer>
         </div>
     );
 };
