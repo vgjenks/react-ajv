@@ -15,23 +15,12 @@ AjvFormats(ajv);
 AjvErrors(ajv);
 
 /**
- * Call this when app loads
- */
-const initValidationCache = async () => {
-    try {
-        ajv.removeSchema("contactForm");
-        ajv.addSchema(contactForm, "contactForm");
-        return true
-    } catch (e) {
-        throw new Error(e);
-    }
-};
-
-/**
  * Custom validation resolver - passed to react-hook-form
  */
 const validateResolver = async (data, context) => {
     //pull by context prop in useForm()
+    ajv.removeSchema("contactForm");
+    ajv.addSchema(contactForm, "contactForm");
     let validate = ajv.getSchema(context);
 
     // let { schema } = validate;
@@ -54,7 +43,7 @@ const validateResolver = async (data, context) => {
     //reduce errors to format form expects
     let errorsFormatted = errors.reduce((prev, current) => ({
         ...prev,
-        [current.instancePath.replace("/", "")]: current.message
+        [current.instancePath.replace("/", "")]: current
     }), {});
 
     //return expected format
@@ -65,6 +54,5 @@ const validateResolver = async (data, context) => {
 };
 
 export {
-    initValidationCache,
     validateResolver
 };
