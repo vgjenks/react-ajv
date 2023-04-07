@@ -6,13 +6,10 @@ const Home = () => {
         <div className="home-layout">
             <header>
                 <h1>
-                    Using AJV with react-hook-form
+                    Custom AJV resolver with react-hook-form
                 </h1>
                 <div>
-                    Using a simple custom adapter and pre-loading
-                    schemas when a React app starts, AJV can be
-                    used to quickly and efficiently validate any
-                    type of data.
+                    AJV can be used to quickly and efficiently validate your data.
                 </div>
             </header>
             <main>
