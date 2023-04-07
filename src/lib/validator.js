@@ -18,12 +18,12 @@ AjvErrors(ajv);
  * Custom validation resolver - passed to react-hook-form
  */
 const validateResolver = async (data, context) => {
-    //pull by context prop in useForm()
-    ajv.removeSchema("contactForm");
-    ajv.addSchema(contactForm, "contactForm");
-    let validate = ajv.getSchema(context);
+    //add schema by name
+    ajv.removeSchema(context);
+    ajv.addSchema(contactForm, context);
 
-    // let { schema } = validate;
+    //pull by context prop in useForm()
+    let validate = ajv.getSchema(context);
 
     //run validation and pull errors
     let isValid = await validate(data);
